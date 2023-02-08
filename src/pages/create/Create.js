@@ -1,106 +1,110 @@
-import { useState, useRef, useEffect } from 'react'
-import { useFetch } from '../../hooks/useFetch'
-import { useHistory } from 'react-router-dom'
+import { useState, useRef } from "react";
+import { useHistory } from "react-router-dom";
+import { projectFirestore } from "../../firebase/config";
 
 // styles
-import './Create.css' 
-
+import "./Create.css";
 
 export default function Create() {
+  const [title, setTitle] = useState("");
+  const [method, setMethod] = useState("");
+  const [cookingTime, setCookingTime] = useState("");
+  const [newIngredient, setNewIngredient] = useState("");
+  const [ingredients, setIngredients] = useState([]);
+  const ingredientInput = useRef(null);
+  const history = useHistory;
 
-    const [title, setTitle] = useState('')
-    const [method, setMethod] = useState('')
-    const [cookingTime, setCookingTime] = useState('')
-    const [newIngredient, setNewIngredient] = useState('')
-    const [ingredients, setIngredients] = useState([])
-    const ingredientInput = useRef(null)
-    const history = useHistory
+  const handleSubmit = async (e) => {
+    e.preventDefault(); //prevent reloading when form in submitted
 
-    const { postData, data, error } = useFetch('http://localhost:3000/recipes', 'POST')
+    //console.log(title,method,cookingTime,ingredients)
 
-    const handleSubmit = (e) => {
-        e.preventDefault() //prevent reloading when form in submitted
+    const doc = {
+      title,
+      ingredients,
+      method,
+      cookingTime: cookingTime + " minutes ",
+    };
 
-        //console.log(title,method,cookingTime,ingredients)
+    try {
+      await projectFirestore.collection("recipes").add(doc);
+      history.push("/");
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
-        postData({title, ingredients, method, cookingTime: cookingTime + ' minutes '})
+  const handleAdd = (e) => {
+    e.preventDefault();
 
+    const ing = newIngredient.trim(); //takes away whitespace from any ingredient
 
+    if (ing && !ingredients.includes(ing)) {
+      setIngredients((prevIngredients) => [...prevIngredients, ing]);
     }
 
-    const handleAdd = (e) => {
-        e.preventDefault()
+    setNewIngredient(""); //clear value
+    ingredientInput.current.focus();
+  };
 
-        const ing = newIngredient.trim() //takes away whitespace from any ingredient
-        
-        if (ing && !ingredients.includes(ing)) {
-            setIngredients(prevIngredients => [...prevIngredients, ing])
-        }
+  return (
+    <div className="create">
+      <h2 className="page-title">Add a New Recipe</h2>
 
-        setNewIngredient('') //clear value
-        ingredientInput.current.focus()
-    }
+      <form onSubmit={handleSubmit}>
+        <label>
+          <span>Recipe title:</span>
+          <input
+            type="text"
+            onChange={(e) => setTitle(e.target.value)}
+            value={title}
+            required
+          />
+        </label>
 
-    // redirect the user when we get a data response
-    useEffect(() => {
-        if (data) {
-            history.push('/')
-        }
-    }, [data])
+        {/* Ingredients go here */}
+        <label>
+          <span>Recipe ingredients:</span>
+          <div className="ingredients">
+            <input
+              type="text"
+              onChange={(e) => setNewIngredient(e.target.value)}
+              value={newIngredient}
+              ref={ingredientInput}
+            />
+            <button onClick={handleAdd} className="btn">
+              add
+            </button>
+          </div>
+        </label>
+        <p>
+          Current ingredients:{" "}
+          {ingredients.map((i) => (
+            <em key={i}> {i},</em>
+          ))}
+        </p>
 
-    return (
-        <div className="create">
-            <h2 className="page-title">Add a New Recipe</h2>
+        <label>
+          <span>Recipe method:</span>
+          <textarea
+            onChange={(e) => setMethod(e.target.value)}
+            value={method}
+            required
+          />
+        </label>
 
-            <form onSubmit={handleSubmit}>
+        <label>
+          <span>Cooking time (minutes):</span>
+          <input
+            type="number"
+            onChange={(e) => setCookingTime(e.target.value)}
+            value={cookingTime}
+            required
+          />
+        </label>
 
-                <label>
-                    <span>Recipe title:</span>
-                    <input 
-                        type="text"
-                        onChange={(e)=> setTitle(e.target.value)}
-                        value={title}
-                        required
-                    />    
-                </label>
-
-                {/* Ingredients go here */}
-                <label>
-                    <span>Recipe ingredients:</span>
-                    <div className="ingredients">
-                       <input 
-                        type="text" 
-                        onChange={(e) => setNewIngredient(e.target.value)}
-                        value={newIngredient}
-                        ref={ingredientInput}
-                       />
-                        <button onClick={handleAdd} className="btn">add</button>
-                    </div>
-                </label>
-                <p>Current ingredients: {ingredients.map(i => <em key={i}> {i},</em>)}</p>
-
-                <label>
-                    <span>Recipe method:</span>
-                    <textarea 
-                    onChange={( e ) => setMethod(e.target.value)}
-                    value={method}
-                    required 
-                    />
-                </label>
-
-                <label>
-                    <span>Cooking time (minutes):</span>
-                    <input
-                        type="number"
-                        onChange={( e ) => setCookingTime(e.target.value)}
-                        value={cookingTime}
-                        required
-                    />
-                </label>
-
-                <button className="btn">submit</button>
-
-            </form>
-        </div>
-    )
+        <button className="btn">submit</button>
+      </form>
+    </div>
+  );
 }
