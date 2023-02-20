@@ -29,6 +29,7 @@ export default function RecipeList({ recipes }) {
           <img
             className="delete"
             src={Trashcan}
+            alt="trash can"
             onClick={() => handleClick(recipe.id)}
           ></img>
         </div>
